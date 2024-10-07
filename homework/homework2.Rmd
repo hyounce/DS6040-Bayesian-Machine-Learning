@@ -1,0 +1,23 @@
+# Homework 2 - Hilde Younce
+
+```{r}
+library(ggplot2)
+```
+
+## Problem 1:
+
+```{r}
+# Get data 
+wine_train <- read.csv('whitewine-training-ds6040.csv')
+```
+
+```{r}
+# Density plot 1: residual.sugar
+
+```
+
+```{r}
+# Density plot 2: total.sulfur.dioxide
+
+```
+
