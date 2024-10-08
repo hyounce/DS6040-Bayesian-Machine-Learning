@@ -27,24 +27,30 @@ ggplot(wine_train, aes(x=total.sulfur.dioxide)) + geom_density(fill = "lightblue
 
 The density for total.sulfur.dioxide looks much more normal than the density plot for residual.sugar. There looks to be a mean value around -0.5, with a slight skew to the right. 
 
+**Part 1:**
+
 ```{r}
-# 1) 
-variances <- apply(wine_train, 2, var)
-print(variances)
+# Function to calculate posterior (sample mean, sample variance, mu0, tau, n)
+
 ```
 
 ```{r}
-# fixed.acidity:
-rstan_options(auto_write = TRUE)
+# Compute variances
+var_sugar <- var(wine_train$residual.sugar)
+var_sulfur <- var(wine_train$total.sulfur.dioxide)
+```
 
-N = length(wine_train$fixed.acidity)
-y = wine_train$fixed.acidity
-sigma = var(wine_train$fixed.acidity)
+```{r}
+# Residual sugar - uninformative prior
+n = nrow(wine_train)
 mu0 = 0
-tau = 1
-data_list = list(N=N, y=y, sigma=sigma, mu0=mu0, tau=tau)
+tau = 1000 # high variance
+mu = rnorm(n, mu0, tau) # conjugate prior
+y = rnorm(n, mu, 1)
+```
 
-results = stan(file='homework2.stan', data=data_list)
-extract(results)
+```{r}
+# Residual sugar - informative prior
+
 ```
 
