@@ -31,26 +31,35 @@ The density for total.sulfur.dioxide looks much more normal than the density plo
 
 ```{r}
 # Function to calculate posterior (sample mean, sample variance, mu0, tau, n)
-
+normal_posterior <- function(n, sigma, mu, mu0, tau){
+  post_var <- 1 / (1 / sigma + 1 / tau)
+  post_mean <- (mu / sigma + mu0 / tau) * post_var
+  return (c(post_var, post_mean))
+}
 ```
 
-```{r}
-# Compute variances
-var_sugar <- var(wine_train$residual.sugar)
-var_sulfur <- var(wine_train$total.sulfur.dioxide)
-```
 
 ```{r}
 # Residual sugar - uninformative prior
+var_sugar <- var(wine_train$residual.sugar)
 n = nrow(wine_train)
 mu0 = 0
 tau = 1000 # high variance
 mu = rnorm(n, mu0, tau) # conjugate prior
-y = rnorm(n, mu, 1)
+post <- normal_posterior(n, var_sugar, mu, mu0, tau)
 ```
 
 ```{r}
 # Residual sugar - informative prior
 
+```
+
+```{r}
+# Total Sulfur Dioxide - uninformative prior
+var_sulfur <- var(wine_train$total.sulfur.dioxide)
+```
+
+```{r}
+# Total Sulfur Dioxide - informative prior
 ```
 
