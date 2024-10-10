@@ -3,10 +3,12 @@
 ```{r}
 # install.packages("rstan", repos = c('https://stan-dev.r-universe.dev', getOption("repos")))
 library(ggplot2)
+library(tidyverse)
+library(dirmult)
 library(rstan)
 ```
 
-## Problem 1:
+## Problem 1: Conjugate Priors
 
 ```{r}
 # Get data 
@@ -29,7 +31,7 @@ ggplot(wine_train, aes(x=total.sulfur.dioxide)) +
   labs(title="Total Sulfur Dioxide Density")
 ```
 
-The density for total.sulfur.dioxide looks much more normal than the density plot for residual.sugar. There looks to be a mean value around -0.5, with a slight skew to the right. 
+The density for total.sulfur.dioxide looks more normal than the density plot for residual.sugar. There looks to be a mean value around -0.5, with a slight skew to the right. 
 
 #### Normal Distribution
 
@@ -166,8 +168,48 @@ In this example, our hyperparameter choice had a very significant effect on our 
 They are much much larger. 
 
 
+## Problem 2: Multinomial Prios
 
+**Looking at the above formula for the posterior distribution, how can you interpret the meaning of α?**
 
+Since α is a vector of hyperparameter choices for each category, we can interpret alpha like a vector of weights that represents our belief in the probability of each category. If we choose the same alpha for all categories, we are imposing an uninformative prior that assumes all categories are equally likely to occur. 
 
+```{r}
+# Get n vector
+counts <- table(wine_train$wine_quality)
+n <- c(counts[[1]], counts[[2]], counts[[3]])
+```
 
+```{r}
+# Uninformative hyperparameter
+alphas <- c(1,1,1)
+post_uninform <- data.frame(rdirichlet(1000, alphas + n))
+post_uninform <- rename(post_uninform,"A" = X1, "C" = X2, "F" = X3)
+head(post_uninform)
+```
 
+```{r}
+# Informative Prior 
+alphas <- c(5,50,10) # Based on category counts in dataset
+post_inform <- data.frame(rdirichlet(n=1000, alphas + n))
+post_inform <- rename(post_inform, "A" = X1, "C" = X2, "F" = X3)
+head(post_inform)
+```
+
+```{r}
+# Boxplot 1: Uninformative 
+uninform_long <- pivot_longer(post_uninform, cols = everything(), names_to = "Grade", values_to = "Value")
+ggplot(uninform_long, aes(x = Grade, y = Value, color = Grade)) +
+  geom_boxplot() +
+  labs(title = "Uninformative Hyperparameter")
+```
+
+```{r}
+# Boxplot 2: Informative
+inform_long <- pivot_longer(post_inform, cols = everything(), names_to = "Grade", values_to = "Value")
+ggplot(inform_long, aes(x = Grade, y = Value, color = Grade)) + 
+  geom_boxplot() +
+  labs(title = "Informative Hyperparameter")
+```
+
+I'm not sure if I made a mistake somewhere in my code or if this is the expected result, because it looks like my hyperparameter choice had very little effect on my posterior distributions for each letter grade. The boxplots for the uninformative prior and informative prior are practically identical, and remained so even when I tested a range of different alpha vectors. 
