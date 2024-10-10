@@ -27,11 +27,11 @@ ggplot(wine_train, aes(x=total.sulfur.dioxide)) + geom_density(fill = "lightblue
 
 The density for total.sulfur.dioxide looks much more normal than the density plot for residual.sugar. There looks to be a mean value around -0.5, with a slight skew to the right. 
 
-**Part 1:**
+**Normal Distribution**
 
 ```{r}
-# Function to calculate posterior (sample mean, sample variance, mu0, tau, n)
-normal_posterior <- function(n, sigma, mu, mu0, tau){
+# Function to calculate posterior
+normal_posterior <- function(n, mu, sigma, mu0, tau){
   post_var <- 1 / (1 / sigma + 1 / tau)
   post_mean <- (mu / sigma + mu0 / tau) * post_var
   return (c(post_var, post_mean))
@@ -41,25 +41,75 @@ normal_posterior <- function(n, sigma, mu, mu0, tau){
 
 ```{r}
 # Residual sugar - uninformative prior
-var_sugar <- var(wine_train$residual.sugar)
 n = nrow(wine_train)
+mean_sugar <- mean(wine_train$residual.sugar)
+var_sugar <- var(wine_train$residual.sugar)
+
 mu0 = 0
 tau = 1000 # high variance
-mu = rnorm(n, mu0, tau) # conjugate prior
-post <- normal_posterior(n, var_sugar, mu, mu0, tau)
+post1 <- normal_posterior(n, mean_sugar, var_sugar, mu0, tau)
+
+print(paste("Posterior mean", post1[1]))
+print(paste("Posterior mean", post1[2]))
 ```
 
 ```{r}
 # Residual sugar - informative prior
+mu0 = 0
+tau = 10 # low variance
+post2 <- normal_posterior(n, mean_sugar, var_sugar, mu0, tau)
 
+print(paste("Posterior mean", post2[1]))
+print(paste("Posterior mean", post2[2]))
 ```
 
 ```{r}
 # Total Sulfur Dioxide - uninformative prior
+mean_sulfur <- mean(wine_train$total.sulfur.dioxide)
 var_sulfur <- var(wine_train$total.sulfur.dioxide)
+
+mu0 = 0
+tau = 1000 # high variance
+post_mean3 <- normal_posterior(n, mean_sulfur, var_sulfur, mu0, tau)
+
+print(paste("Posterior mean", post3[1]))
+print(paste("Posterior mean", post3[2]))
 ```
 
 ```{r}
 # Total Sulfur Dioxide - informative prior
+mu0 = 0
+tau = 10 # low variance
+post4 <- normal_posterior(n, mean_sulfur, var_sulfur, mu0, tau)
+
+print(paste("Posterior mean", post4[1]))
+print(paste("Posterior mean", post4[2]))
+```
+
+What are the impacts of different hyperparameter choices on the posterior distributions? Is
+it possible to chose "bad" hyperparameters? If so, why? What are the consequences for
+inference?
+
+Hyperparameters effect the amount of influence a prior has on the posterior distribution, and the overall shape of that distribution. In this example, my choice of hyperparameters did not effect the prior distribution heavily, but in theory a highly informative tau value means the prior distribution will be tightly centered around mu0, which will have a stronger influence on the posterior. "Bad" hyperparameter choices are ones that do not fit the data or distribution you are working with, like choosing highly informative priors when we lack prior knowledge of our parameters. In inference, this can lead to the posterior being constricted and hiding insights or misrepresenting reality. 
+
+**Exponential Distribution:**
+
+```{r}
+# Function to calculate posterior
+
+```
+
+```{r}
+# Residual sugar - uninformative prior
+n = nrow(wine_train)
+mean_sugar <- mean(wine_train$residual.sugar)
+var_sugar <- var(wine_train$residual.sugar)
+
+mu0 = 0
+tau = 1000 # high variance
+post1 <- normal_posterior(n, mean_sugar, var_sugar, mu0, tau)
+
+print(paste("Posterior mean", post1[1]))
+print(paste("Posterior mean", post1[2]))
 ```
 
