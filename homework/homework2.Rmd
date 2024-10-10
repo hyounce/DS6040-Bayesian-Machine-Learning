@@ -310,3 +310,64 @@ Since we chose a larger variance for our informative prior, this lead to a highe
 
 
 ## Extra Credit:
+
+**Uninformative choices**
+```{r}
+rstan_options(auto_write = TRUE)
+
+N1 = 100 # number of grade A observations
+N2 = 1000 # number of grade F observations
+
+y1 = as.vector(df_a$alcohol)
+y2 = as.vector(df_f$alcohol)
+
+# uninformative hyperparameters
+mu_sd1 = 10 
+sigma_scale1 = 10
+mu_sd2 = 10
+sigma_scale2 = 10
+
+dat_list1 = list(N1=N1, N2=N2, y1=y1, y2=y2, mu_sd1=mu_sd1, mu_sd2=mu_sd2, 
+                 sigma_scale1=sigma_scale1, sigma_scale2=sigma_scale2)
+
+results1 = stan(file="homework2.stan", data=dat_list1)
+```
+
+**Informative choices:**
+```{r}
+# informative hyperparameters
+mu_sd1 = 1000 
+sigma_scale1 = 2
+mu_sd2 = 1000
+sigma_scale2 = 2
+
+dat_list2 = list(N1=N1, N2=N2, y1=y1, y2=y2, mu_sd1=mu_sd1, mu_sd2=mu_sd2, 
+                 sigma_scale1=sigma_scale1, sigma_scale2=sigma_scale2)
+
+results2 = stan(file="homework2.stan", data=dat_list2)
+```
+
+**Plot posterior distributions of differences in means:**
+```{r}
+mu_samples1 <- extract(results1)$mu_diff
+mu_samples2 <- extract(results2)$mu_diff
+```
+
+```{r}
+posterior_df <- data.frame(
+  difference = c(mu_samples1, mu_samples2),
+  type = rep(c("Uninformative", "Informative"), each = length(mu_samples1))
+)
+
+ggplot(posterior_df, aes(x = difference, fill = type)) +
+  geom_density(alpha = 0.5) +
+  labs(title = "Posterior Distributions of the Difference in Means")
+```
+
+**How are these posteriors different/similar to those from the original analyses where we specified the variances as known? What was the impact of priors here?**
+
+These posteriors are different than when specifying a known variance because using a prior for variance introduces more uncertainty into our posterior distributions. The posterior distribution reflects knowledge from the prior and observed data, rather than just the observed data. This leads to our distribution being wider or having greater tails. In this case, the uninformative priors led to a greater density around the mean and a slightly more narrow distribution than the informative priors. 
+
+
+
+

@@ -15,16 +15,16 @@ parameters{
   real<lower=0> sigma1;
   real<lower=0> sigma2;
 }
-model{
-  mu1 ~ normal(0, mu_sd1)
-  mu2 ~ normal(0, mu_sd2)
-  sigma1 ~ cauchy(0, sigma_scale1)
-  sigma2 ~ cauchy(0, sigma_scale2)
-  
-  y1 ~ normal(mu1, sigma1)
-  y2 ~ normal(mu2, sigma2)
-}
 transformed parameters{
   real mu_diff;
   mu_diff = mu1 - mu2;
+}
+model{
+  mu1 ~ normal(0, mu_sd1);
+  mu2 ~ normal(0, mu_sd2);
+  sigma1 ~ cauchy(0, sigma_scale1);
+  sigma2 ~ cauchy(0, sigma_scale2);
+  
+  y1 ~ normal(mu1, sigma1);
+  y2 ~ normal(mu2, sigma2);
 }
