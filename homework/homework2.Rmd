@@ -15,8 +15,8 @@ library(rstan)
 wine_train <- read.csv('whitewine-training-ds6040.csv')
 ```
 
+**Density plot 1: residual.sugar**
 ```{r}
-# Density plot 1: residual.sugar
 ggplot(wine_train, aes(x=residual.sugar)) + 
   geom_density(fill = "lightblue") + 
   labs(title="Residual Sugar Density")
@@ -24,8 +24,8 @@ ggplot(wine_train, aes(x=residual.sugar)) +
 
 The density plot for residual.sugar does not look very normally distributed. There is a higher density around -1 that declines and then zeros out at around 2.5, and is skewed towards the right. 
 
+**Density plot 2: total.sulfur.dioxide**
 ```{r}
-# Density plot 2: total.sulfur.dioxide
 ggplot(wine_train, aes(x=total.sulfur.dioxide)) + 
   geom_density(fill = "lightblue") + 
   labs(title="Total Sulfur Dioxide Density")
@@ -44,9 +44,8 @@ normal_posterior <- function(n, mu, sigma, mu0, tau){
 }
 ```
 
-
+**Residual sugar: Uninformative prior**
 ```{r}
-# Residual sugar - uninformative prior
 n = nrow(wine_train)
 mean_sugar <- mean(wine_train$residual.sugar)
 var_sugar <- var(wine_train$residual.sugar)
@@ -59,8 +58,8 @@ print(paste("Posterior mean:", post1[1]))
 print(paste("Posterior variance:", post1[2]))
 ```
 
+**Residual sugar: Informative prior**
 ```{r}
-# Residual sugar - informative prior
 mu0 = 0
 tau = 10 # low variance
 post2 <- normal_posterior(n, mean_sugar, var_sugar, mu0, tau)
@@ -69,8 +68,8 @@ print(paste("Posterior mean:", post2[1]))
 print(paste("Posterior variance:", post2[2]))
 ```
 
+**Total Sulfur Dioxide: Uninformative prior**
 ```{r}
-# Total Sulfur Dioxide - uninformative prior
 mean_sulfur <- mean(wine_train$total.sulfur.dioxide)
 var_sulfur <- var(wine_train$total.sulfur.dioxide)
 
@@ -82,8 +81,8 @@ print(paste("Posterior mean:", post3[1]))
 print(paste("Posterior variance:", post3[2]))
 ```
 
+**Total Sulfur Dioxide: Informative prior**
 ```{r}
-# Total Sulfur Dioxide - informative prior
 mu0 = 0
 tau = 10 # low variance
 post4 <- normal_posterior(n, mean_sulfur, var_sulfur, mu0, tau)
@@ -107,8 +106,8 @@ exp_posterior <- function(n, sum, alpha0, beta0){
 }
 ```
 
+**Residual sugar: Uninformative prior**
 ```{r}
-# Residual sugar - uninformative prior
 sum_sugar <- sum(wine_train$residual.sugar)
 
 alpha0 <- 1
@@ -121,8 +120,8 @@ print(paste("Posterior mean:", post_alpha / post_beta))
 print(paste("Posterior variance:", post_alpha / (post_beta^2)))
 ```
 
+**Residual sugar: Informative prior**
 ```{r}
-# Residual sugar - informative prior
 alpha0 <- 10
 beta0 <- 5
 post2 <- exp_posterior(n, sum_sugar, alpha0, beta0)
@@ -133,8 +132,8 @@ print(paste("Posterior mean:", post_alpha / post_beta))
 print(paste("Posterior variance:", post_alpha / (post_beta^2)))
 ```
 
+**Total sulfur dioxide: Uninformative prior**
 ```{r}
-# Total sulfur dioxide - uninformative prior
 sum_sulfur <- sum(wine_train$total.sulfur.dioxide)
 
 alpha0 <- 1
@@ -147,8 +146,8 @@ print(paste("Posterior mean:", post_alpha / post_beta))
 print(paste("Posterior variance:", post_alpha / (post_beta^2)))
 ```
 
+**Total sulfur dioxide: Informative prior**
 ```{r}
-# Total sulfur dioxide - informative prior
 alpha0 <- 10
 beta0 <- 5
 post4 <- exp_posterior(n, sum_sulfur, alpha0, beta0)
@@ -180,32 +179,32 @@ counts <- table(wine_train$wine_quality)
 n <- c(counts[[1]], counts[[2]], counts[[3]])
 ```
 
+**Uninformative Prior**
 ```{r}
-# Uninformative hyperparameter
 alphas <- c(1,1,1)
 post_uninform <- data.frame(rdirichlet(1000, alphas + n))
 post_uninform <- rename(post_uninform,"A" = X1, "C" = X2, "F" = X3)
 head(post_uninform)
 ```
 
+**Informative Prior**
 ```{r}
-# Informative Prior 
 alphas <- c(5,50,10) # Based on category counts in dataset
 post_inform <- data.frame(rdirichlet(n=1000, alphas + n))
 post_inform <- rename(post_inform, "A" = X1, "C" = X2, "F" = X3)
 head(post_inform)
 ```
 
+**Boxplot 1: Uninformative**
 ```{r}
-# Boxplot 1: Uninformative 
 uninform_long <- pivot_longer(post_uninform, cols = everything(), names_to = "Grade", values_to = "Value")
 ggplot(uninform_long, aes(x = Grade, y = Value, color = Grade)) +
   geom_boxplot() +
   labs(title = "Uninformative Hyperparameter")
 ```
 
+**Boxplot 2: Informative**
 ```{r}
-# Boxplot 2: Informative
 inform_long <- pivot_longer(post_inform, cols = everything(), names_to = "Grade", values_to = "Value")
 ggplot(inform_long, aes(x = Grade, y = Value, color = Grade)) + 
   geom_boxplot() +
@@ -213,3 +212,101 @@ ggplot(inform_long, aes(x = Grade, y = Value, color = Grade)) +
 ```
 
 I'm not sure if I made a mistake somewhere in my code or if this is the expected result, because it looks like my hyperparameter choice had very little effect on my posterior distributions for each letter grade. The boxplots for the uninformative prior and informative prior are practically identical, and remained so even when I tested a range of different alpha vectors. 
+
+
+## Problem 3: Bayesian Inference
+
+**Grade A: Uninformative**
+```{r}
+df_a <- wine_train[wine_train$wine_quality == "A",]
+mean_a <- mean(df_a$alcohol)
+var_a <- var(df_a$alcohol)
+
+mu0 = 0
+tau = 10 # low variance
+post_a_uninform <- normal_posterior(n, mean_a, var_a, mu0, tau)
+
+print(paste("Posterior mean:", post_a_uninform[1]))
+print(paste("Posterior variance:", post_a_uninform[2]))
+```
+
+**Grade A: Informative**
+```{r}
+mu0 = 0
+tau = 1000 # high variance
+post_a_inform <- normal_posterior(n, mean_a, var_a, mu0, tau)
+
+print(paste("Posterior mean:", post_a_inform[1]))
+print(paste("Posterior variance:", post_a_inform[2]))
+```
+
+**Grade F: Uninformative**
+```{r}
+df_f <- wine_train[wine_train$wine_quality == "F",]
+mean_f <- mean(df_f$alcohol)
+var_f <- var(df_f$alcohol)
+
+mu0 = 0
+tau = 10 # low variance
+post_f_uninform <- normal_posterior(n, mean_f, var_f, mu0, tau)
+
+print(paste("Posterior mean:", post_f_uninform[1]))
+print(paste("Posterior variance:", post_f_uninform[2]))
+```
+
+**Grade F: Informative**
+```{r}
+mu0 = 0
+tau = 1000 # high variance
+post_f_inform <- normal_posterior(n, mean_f, var_f, mu0, tau)
+
+print(paste("Posterior mean:", post_f_inform[1]))
+print(paste("Posterior variance:", post_f_inform[2]))
+```
+
+**Difference: Uninformative**
+```{r}
+mu_uninform <- post_a_uninform[1] - post_f_uninform[1]
+var_uninform <- post_a_uninform[2] + post_f_uninform[2]
+
+print(paste("Posterior mean of the difference:", mu_uninform))
+print(paste("Posterior variance of the difference:", var_uninform))
+```
+
+**Difference: Informative**
+```{r}
+mu_inform <- post_a_inform[1] - post_f_inform[1]
+var_inform <- post_a_inform[2] + post_f_inform[2]
+
+print(paste("Posterior mean of the difference:", mu_inform))
+print(paste("Posterior variance of the difference:", var_inform))
+```
+
+**95% HDI: Uninformative**
+```{r}
+lower_bound <- mu_uninform - 1.96 * var_uninform
+upper_bound <- mu_uninform + 1.96 * var_uninform
+
+cat("95% HDI: [", lower_bound, ", ", upper_bound, "]\n")
+```
+
+**95% HDI: Informative**
+```{r}
+lower_bound <- mu_inform - 1.96 * var_inform
+upper_bound <- mu_inform + 1.96 * var_inform
+
+cat("95% HDI: [", lower_bound, ", ", upper_bound, "]\n")
+```
+
+**What does this interval tell you about the difference between the alcohol quantities in the two grades of wine? Would you consider the alcohol content to be 'significantly' different?**
+
+For our uninformative priors, we had a 95% HDI of [-0.07347578, 1.038092]. Since this interval includes zero, though narrowly, this leaves the possibility that there is no difference in the means of alcohol content across grade A and grade F wines. However, since our interval is wide, with an upper bound of 1.038, there is a credible range that suggests the alcohol content in grade A wine can be up to 1 units higher than alcohol content in grade F wine. Because 0 is very close to our lower bound, I would consider the mean alcohol content to be significantly different across grades of wine. 
+
+Similarly, for the informative priors, we had a 95% HDI of [-0.1117743, 1.234717], a slightly wider range. Again, the interval includes zero so there may be no difference in means of alcohol content. However, for the same reasoning applied to the uninformative prior interval, I would still consider the alcohol content to be statistically significant. 
+
+**How does prior choice impact this?**
+
+Since we chose a larger variance for our informative prior, this lead to a higher variance and slightly higher mean in our posterior distribution and therefore a wider range of values in our density interval. 
+
+
+## Extra Credit:
