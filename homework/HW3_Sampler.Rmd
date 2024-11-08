@@ -14,6 +14,8 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r}
 library(Rmpfr)
+library(ggplot2)
+library(dplyr)
 dat = read.csv("coaldisasters-ds6040.csv")
 ```
 
@@ -36,7 +38,8 @@ gibbs_sampler = function(iter, dat, a_mu, b_mu, a_lambda, b_lambda){
   #Sampler
   for(i in 2:(iter+1)){
     mu_vec[i] = rgamma(1, a_mu + sum(dat$Count[1:k_samp_vec[i-1]]), k_samp_vec[i-1] + b_mu)
-    lambda_vec[i] = rgamma(1, a_lambda + sum(dat$Count[(k_samp_vec[i-1]+1):nrow(dat)]), 112 - k_samp_vec[i-1] + b_lambda)
+    lambda_vec[i] = rgamma(1, a_lambda + sum(dat$Count[(k_samp_vec[i-1]+1):nrow(dat)]), 
+                           112 - k_samp_vec[i-1] + b_lambda)
     
     l_temp = vector()
   for(j in 1:111){  
@@ -59,6 +62,44 @@ test = gibbs_sampler(500, dat, a_mu = 1, b_mu = 1, a_lambda = 1, b_lambda = 1)
 
 ```{r}
 # Plot posterior densities
-
+test %>% ggplot(aes(x=mu)) + geom_density(fill = "skyblue") + labs(title="Density of Mu")
 ```
+```{r}
+test %>% ggplot(aes(x=lambda)) + geom_density(fill = "skyblue") + labs(title="Density of Lambda")
+```
+```{r}
+# EAP and confidence intervals 
+
+# Mu
+mu_EAP <- mean(test$mu)
+mu_CI <- quantile(test$mu, probs = c(0.025, 0.975))
+
+# Lambda
+lambda_EAP <- mean(test$lambda)
+lambda_CI <- quantile(test$lambda, probs = c(0.025, 0.975))
+
+cat("EAP estimate for mu:", mu_EAP, "\n")
+cat("95% Credible Interval for mu:", mu_CI, "\n")
+cat("EAP estimate for lambda:", lambda_EAP, "\n")
+cat("95% Credible Interval for lambda:", lambda_CI, "\n")
+```
+```{r}
+# 5 most probable values of k
+test$diff = abs(test$mu - test$lambda)
+test %>% arrange(desc(diff)) %>% head(5)
+```
+**a) Describe your findings. What do these EAP and credible intervals imply? And what was the most likely year of the changepoint?** 
+
+Based on the results of the Gibbs sampler, for a given year k the expected value of the rate of coal mining accidents from years 1 to k is 3.03, and there is a 95% probability that an unobserved mu value will fall into the interval (2.54, 3.62). Likewise, for a given year k the expected value of the rate of coal mining accidents from years k+1 to 112 is 0.92, and there is a 95% probability that an unobserved lambda value will fall into the interval (0.71, 1.18). 
+
+We can identify the most probable years where a changepoint occured, we can look at the biggest differences in the rates of coal accidents before and after year k, or equivalently the biggest differences in mu and lambda. Identifying the top five largest differences, we see that when k=40, there is the biggest change between mu and lambda. This indicates that there was likely a changepoint in the year k=40, which was 1890. 
+
+**b) Why is an EAP or credible interval not necessarily the most appropriate thing to report for the year of the changepoint?**
+
+EAP and credible intervals may not provide the best insight when we are trying to locate a changepoint because they give a single summary of the distribution of mu and lambda. Taking a summary over a long period of time may mask specific moments in time where there were drastic changes, and misrepresent the data with a single mean value. Finally, credible intervals offer bounds but do not pinpoint the exact moment of a changepoint. 
+
+
+
+
+
 
