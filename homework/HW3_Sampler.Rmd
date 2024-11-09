@@ -90,7 +90,7 @@ test %>% arrange(desc(diff)) %>% head(5)
 ```
 **a) Describe your findings. What do these EAP and credible intervals imply? And what was the most likely year of the changepoint?** 
 
-Based on the results of the Gibbs sampler, for a given year k the expected value of the rate of coal mining accidents from years 1 to k is 3.03, and there is a 95% probability that an unobserved mu value will fall into the interval (2.54, 3.62). Likewise, for a given year k the expected value of the rate of coal mining accidents from years k+1 to 112 is 0.92, and there is a 95% probability that an unobserved lambda value will fall into the interval (0.71, 1.18). 
+Based on the results of the Gibbs sampler, for a given year k the expected value of the rate of coal mining accidents from years 1 to k is 3.06, and there is a 95% probability that an unobserved mu value will fall into the interval (2.46, 3.61). Likewise, for a given year k the expected value of the rate of coal mining accidents from years k+1 to 112 is 0.91, and there is a 95% probability that an unobserved lambda value will fall into the interval (0.71, 1.16). 
 
 We can identify the most probable years where a changepoint occured, we can look at the biggest differences in the rates of coal accidents before and after year k, or equivalently the biggest differences in mu and lambda. Identifying the top five largest differences, we see that when k=40, there is the biggest change between mu and lambda. This indicates that there was likely a changepoint in the year k=40, which was 1890. 
 
@@ -98,8 +98,32 @@ We can identify the most probable years where a changepoint occured, we can look
 
 EAP and credible intervals may not provide the best insight when we are trying to locate a changepoint because they give a single summary of the distribution of mu and lambda. Taking a summary over a long period of time may mask specific moments in time where there were drastic changes, and misrepresent the data with a single mean value. Finally, credible intervals offer bounds but do not pinpoint the exact moment of a changepoint. 
 
+## Part 2: Bayesian Logistic Regression with brms
 
+```{r}
+library(brms)
+library(caret)
+```
 
+```{r}
+# Load and transform data
+wine_data <- read.csv('whitewine-training-ds6040-1.csv')
+wine_data$quality <- ifelse(wine_data$wine_quality == "A", 1, 0)
+```
+
+```{r}
+# Full Logistic Regression Model
+log_model <- brm(
+  formula = quality ~.-wine_quality,
+  data = wine_data,
+  family = bernoulli(link = "logit"),
+  chains = 4,
+  iter = 2000,
+  cores = 4,
+  silent = TRUE
+)
+summary(log_model)
+```
 
 
 
