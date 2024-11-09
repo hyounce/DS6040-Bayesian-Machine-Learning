@@ -124,6 +124,13 @@ log_model <- brm(
 )
 summary(log_model)
 ```
+```{r}
+preds <- predict(log_model, wine_data)
+```
 
+```{r}
+predictors <- colnames(wine_data)[colnames(wine_data) != "quality" & colnames(wine_data) != "wine_quality"]
+print(predictors)
+```
 
 
