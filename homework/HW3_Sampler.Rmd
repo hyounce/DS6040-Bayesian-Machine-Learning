@@ -90,7 +90,7 @@ test %>% arrange(desc(diff)) %>% head(5)
 ```
 **a) Describe your findings. What do these EAP and credible intervals imply? And what was the most likely year of the changepoint?** 
 
-Based on the results of the Gibbs sampler, for a given year k the expected value of the rate of coal mining accidents from years 1 to k is 3.06, and there is a 95% probability that an unobserved mu value will fall into the interval (2.46, 3.61). Likewise, for a given year k the expected value of the rate of coal mining accidents from years k+1 to 112 is 0.91, and there is a 95% probability that an unobserved lambda value will fall into the interval (0.71, 1.16). 
+Based on the results of the Gibbs sampler, for a given year k the expected value of the rate of coal mining accidents from years 1 to k is 3.06, and there is a 95% probability that an unobserved mu value will fall into the interval (2.51, 3.69). Likewise, for a given year k the expected value of the rate of coal mining accidents from years k+1 to 112 is 0.91, and there is a 95% probability that an unobserved lambda value will fall into the interval (0.71, 1.19). 
 
 We can identify the most probable years where a changepoint occured, we can look at the biggest differences in the rates of coal accidents before and after year k, or equivalently the biggest differences in mu and lambda. Identifying the top five largest differences, we see that when k=40, there is the biggest change between mu and lambda. This indicates that there was likely a changepoint in the year k=40, which was 1890. 
 
@@ -107,30 +107,63 @@ library(caret)
 
 ```{r}
 # Load and transform data
-wine_data <- read.csv('whitewine-training-ds6040-1.csv')
-wine_data$quality <- ifelse(wine_data$wine_quality == "A", 1, 0)
+wine_train <- read.csv('whitewine-training-ds6040-1.csv')
+wine_test <- read.csv('whitewine-testing-ds6040.csv')
+wine_train$wine_quality <- ifelse(wine_train$wine_quality == "A", 1, 0)
+wine_test$wine_quality <- ifelse(wine_test$wine_quality == "A", 1, 0)
 ```
 
 ```{r}
 # Full Logistic Regression Model
 log_model <- brm(
-  formula = quality ~.-wine_quality,
-  data = wine_data,
-  family = bernoulli(link = "logit"),
-  chains = 4,
-  iter = 2000,
-  cores = 4,
-  silent = TRUE
+  formula = wine_quality~.,
+  data = wine_train,
+  family = bernoulli(),
+  silent = 0
 )
 summary(log_model)
 ```
+
 ```{r}
-preds <- predict(log_model, wine_data)
+predictors <- setdiff(names(wine_test), "wine_quality")
+combos <- combn(predictors, 3, simplify = FALSE)
+
+results_df <- data.frame(
+  combinations = character(0),
+  class_rate = numeric(0),
+  class_A_rate = numeric(0)
+)
 ```
 
 ```{r}
-predictors <- colnames(wine_data)[colnames(wine_data) != "quality" & colnames(wine_data) != "wine_quality"]
-print(predictors)
+get_rates<- function(combo){
+  formula <- as.formula(paste("wine_quality~", paste(combo, collapse = " + ")))
+  log_model <- brm(
+    formula = formula,
+    data = wine_train,
+    family = bernoulli(),
+    silent = 0
+  )
+  
+  preds <- fitted(log_model, newdata=wine_test[,!(colnames(wine_test)=="wine_quality")], type = "response")
+  preds <- if_else(preds[,1] > 0.1, 1, 0)
+  class_rate <- mean(preds==wine_test$wine_quality)
+  class_A <- wine_test$wine_quality == 1
+  class_A_rate <- mean(preds[class_A] == wine_test$wine_quality[class_A])
+
+  return(list(
+    combinations = paste(combo, collapse = ", "),
+    class_rate = class_rate,
+    class_A_rate = class_A_rate
+  ))
+}
+```
+
+```{r}
+for (combo in combos) {
+  rates <- get_rates(combo)
+  results_df <- rbind(results_df, as.data.frame(rates, stringsAsFactors = FALSE))
+}
 ```
 
 
