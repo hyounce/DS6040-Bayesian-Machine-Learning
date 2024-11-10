@@ -159,11 +159,26 @@ get_rates<- function(combo){
 }
 ```
 
-```{r}
+```{r echo=True, include=False}
 for (combo in combos) {
   rates <- get_rates(combo)
   results_df <- rbind(results_df, as.data.frame(rates, stringsAsFactors = FALSE))
 }
+```
+
+```{r}
+# Best overall classification
+sorted_class <- results_df[order(-results_df$class_rate), ]
+sorted_class[1,]
+```
+```{r}
+# Best classification for class A
+sorted_class <- results_df[order(-results_df$class_A_rate), ]
+sorted_class[1,]
+```
+```{r}
+# Logistic Regression Model 1
+
 ```
 
 
