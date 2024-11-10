@@ -114,17 +114,7 @@ wine_test$wine_quality <- ifelse(wine_test$wine_quality == "A", 1, 0)
 ```
 
 ```{r}
-# Full Logistic Regression Model
-log_model <- brm(
-  formula = wine_quality~.,
-  data = wine_train,
-  family = bernoulli(),
-  silent = 0
-)
-summary(log_model)
-```
-
-```{r}
+# Get combinations of 3 predictors 
 predictors <- setdiff(names(wine_test), "wine_quality")
 combos <- combn(predictors, 3, simplify = FALSE)
 
@@ -136,6 +126,7 @@ results_df <- data.frame(
 ```
 
 ```{r}
+# Function to run brms model and calculate classification rates 
 get_rates<- function(combo){
   formula <- as.formula(paste("wine_quality~", paste(combo, collapse = " + ")))
   log_model <- brm(
@@ -160,6 +151,7 @@ get_rates<- function(combo){
 ```
 
 ```{r echo=True, include=False}
+# Test combinations of predictors
 for (combo in combos) {
   rates <- get_rates(combo)
   results_df <- rbind(results_df, as.data.frame(rates, stringsAsFactors = FALSE))
@@ -176,9 +168,55 @@ sorted_class[1,]
 sorted_class <- results_df[order(-results_df$class_A_rate), ]
 sorted_class[1,]
 ```
+From these results we choose (fixed.acidity, chlorides, sulphates) as the best predictors for overall classification rate and (residual.sugar, free.sulfur.dioxide, alcohol) as the best predictors for the classification rate of class A. 
+
 ```{r}
 # Logistic Regression Model 1
-
+log_model <- brm(
+    formula = wine_quality ~ fixed.acidity + chlorides + sulphates,
+    data = wine_train,
+    family = bernoulli(),
+    silent = 0
+  )
+summary(log_model)
 ```
+
+```{r}
+# Trace plot for model 1
+stanplot(log_model, type = "trace")
+```
+
+```{r}
+# Forest plot for model 1
+stanplot(log_model, type="intervals")
+```
+```{r}
+# Logistic Regression Model 2 
+log_model <- brm(
+    formula = wine_quality ~ residual.sugar + free.sulfur.dioxide + alcohol,
+    data = wine_train,
+    family = bernoulli(),
+    silent = 0
+  )
+summary(log_model)
+```
+
+```{r}
+# Trace plot for model 2
+stanplot(log_model, type = "trace")
+```
+
+```{r}
+# Forest plot for model 2
+stanplot(log_model, type = "intervals")
+```
+
+**Discuss your findings. Examine your parameter distributions and explain what those estimates mean, and how they compare to one another. Don’t forget to interpret the intercept as well.**
+
+Model 1: Looking at the summary of our model, a negative intercept value -3.69 indicates that in the absence of other factors a wine is more likely to be classified as 0 instead of 1. For our predictors, negative values for fixed.acidity and chlorides suggests that higher acidity and chloride levels are associated with lower odds of a wine being classified as a 1. Additionally, the 95% credible intervals are negative and do not include zero, meaning that they are likely statistically significant predictors. On the other hand, the relationship of sulphates on wine quality is weaker because the 95% credible interval includes zero. Finally, Rhat values of 1.00 and high values for Bulk_ESS and Tail_ESS suggest that our model has good precision and has converged well for each parameter. 
+
+Model 2: As in the first model, a negative intercept of -3.88 indicates that a wine is more likely to be classified as a 0 rather than a 1. Positive coefficient values for residual.sugar, free.sulfur.dioxide and alcohol all suggest that higher quantities of those predictors are associated with a better probability of a wine being classified as an A. The coefficient for alcohol is especially high, indicating a strong relationship between high alcohol content and grade A wines. Out of these predictors, residual.sugar is the least significant due to its credible interval containing zero. 
+
+
 
 
