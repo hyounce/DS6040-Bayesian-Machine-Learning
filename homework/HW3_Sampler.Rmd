@@ -133,7 +133,7 @@ get_rates<- function(combo){
     formula = formula,
     data = wine_train,
     family = bernoulli(),
-    silent = 0
+    silent = 2
   )
   
   preds <- fitted(log_model, newdata=wine_test[,!(colnames(wine_test)=="wine_quality")], type = "response")
@@ -163,6 +163,7 @@ for (combo in combos) {
 sorted_class <- results_df[order(-results_df$class_rate), ]
 sorted_class[1,]
 ```
+
 ```{r}
 # Best classification for class A
 sorted_class <- results_df[order(-results_df$class_A_rate), ]
@@ -176,7 +177,7 @@ log_model <- brm(
     formula = wine_quality ~ fixed.acidity + chlorides + sulphates,
     data = wine_train,
     family = bernoulli(),
-    silent = 0
+    silent = 2
   )
 summary(log_model)
 ```
@@ -190,13 +191,14 @@ stanplot(log_model, type = "trace")
 # Forest plot for model 1
 stanplot(log_model, type="intervals")
 ```
+
 ```{r}
 # Logistic Regression Model 2 
 log_model <- brm(
     formula = wine_quality ~ residual.sugar + free.sulfur.dioxide + alcohol,
     data = wine_train,
     family = bernoulli(),
-    silent = 0
+    silent = 2
   )
 summary(log_model)
 ```
