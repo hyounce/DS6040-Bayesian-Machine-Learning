@@ -150,7 +150,7 @@ get_rates<- function(combo){
 }
 ```
 
-```{r echo=True, include=False}
+```{r echo=TRUE, results='hide'}
 # Test combinations of predictors
 for (combo in combos) {
   rates <- get_rates(combo)
