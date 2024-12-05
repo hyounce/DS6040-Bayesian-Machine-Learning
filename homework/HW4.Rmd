@@ -1,0 +1,50 @@
+# HW 4 - Hilde Younce
+
+**Honor Pledge:** On my honor as a student, I have neither given nor received unauthorized aid on this assignment.
+
+```{r}
+library(brms)
+sales_data <- read.csv('sales-ds6040.csv')
+```
+
+### Problem Statement
+
+We are interested in exploring how regional store sales are impacted based on neuroticism and conscientiousness scores of store managers. Specifically, we will examine the difference of sales across food and coffee orders. To do this, we will implement a Bayesian hierarchical model to cluster by store ID and perform a regression to examine differences in sales. Throughout this process, we hope to discover insights concerning the impact of manager personality, as well as which stores we expect to perform well in the absence of neurotic managers.
+
+### Approach:
+
+We will use a Bayesian hierarchical model, specifically a random slope mixed effects model. This model is well-suited for our problem because we are interested in clustering our data by store, thus allowing for variability across stores. Specifically, we are performing linear regression on Sales, with predictors for if the sale was food or coffee, a standardized neuroticism and conscientiousness score, and the personality scores conditioned on store ID (to treat each store as a separate entity). In this way, we do not have to run a different regression model for each store, and can easily compare sale trends across the region.
+
+The model is as follows:
+
+$$
+Sales_{ij} = \beta_0 + \beta_{0j} + \beta_1 * Con_{ij} + \beta_2*Con_{ij}*Food_{ij} + \beta_3*Neur_{ij} + \beta_4*Neur_{ij}*Food_{ij} + \epsilon_{ij}
+$$
+
+Where:
+
+$Sales_{ij}$ - Sales for month $i$ in store $j$
+
+$\beta_0$ - Fixed intercept (mean sales across all stores)
+
+$\beta_1$ - Effect of conscientiousness on coffee sales
+
+$\beta_2$ - Difference in $\beta_1$ effect on food sales
+
+$\beta_3$ - Effect of neuroticism on coffee sales
+
+$\beta_4$ - Difference in $\beta_3$ effect on food sales
+
+$\beta_{0j}$ - Random intercept for store $j$
+
+$\epsilon_{ij}$ - Residual error for month $i$ in store $j$
+
+### Questions / Edits to make: 
+
+**Do we want mixed-effects or fixed-effects, what is the difference?**
+
+**How do I make my model random slope intercept (if that is what I want)?**
+
+**is it sale \~ food + con + neuro + (con\|store) + (neur\|store)?**
+
+**How do i look at coffee vs food sales? same model just color observations differently or do different models?**
