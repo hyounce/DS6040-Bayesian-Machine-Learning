@@ -9,13 +9,19 @@ library(dplyr)
 sales_data <- read.csv('sales-ds6040.csv')
 ```
 
+```{r}
+head(sales_data)
+```
+
 ### Problem Statement
 
-We are interested in exploring how regional store sales are impacted based on neuroticism and conscientiousness scores of store managers. Specifically, we will examine the difference of sales across food and coffee orders. To do this, we will implement a Bayesian hierarchical model to cluster by store ID and perform a linear regression to examine differences in sales. Throughout this process, we hope to discover insights concerning the impact of manager personality, as well as which stores we expect to perform well in the absence of neurotic/conscientious managers.
+We aim to investigate how regional store sales are influenced by the neuroticism and conscientiousness scores of store managers. Specifically, we seek to understand differences in sales between food and coffee orders. To achieve this, we will implement a Bayesian hierarchical model that accounts for clustering by store ID and incorporates a linear regression framework to explore these sales differences. Our goal is to uncover insights into the role of manager personality in driving sales performance and identify stores expected to perform well even in the absence of highly neurotic or conscientious managers.
 
 ### Approach:
 
-We will use a Bayesian hierarchical model, specifically a random slope mixed effects model. This model is well-suited for our problem because we are interested in clustering our data by store and allowing for variability across stores. Specifically, we are performing linear regression on Sales, with predictors for food/coffee transactions, a standardized neuroticism and conscientiousness score, and store ID. Using a hierarchical model and clustering by store is similar to performing a separate linear regression for each building, without losing any data or running multiple models. In this way, we can easily compare sale trends across the region.
+We will employ a Bayesian hierarchical model, focusing on a random slope mixed-effects design. This approach is ideal for our analysis as it accounts for clustering by store while allowing variability in sales trends across stores. Specifically, we will model sales as the outcome, with predictors for food versus coffee transactions, standardized neuroticism and conscientiousness scores, and interactions between these predictors. By incorporating store-level random effects, our model effectively captures differences in sales behavior across locations.
+
+Using this hierarchical structure, we achieve the flexibility of performing store-specific regressions while leveraging the full dataset. This approach enables us to identify patterns and trends in sales across the region, offering a cohesive view of how manager personality traits impact store performance.
 
 The model is as follows:
 
@@ -88,11 +94,37 @@ summary(model)
 **How does conscientiousness and neuroticism impact the sales of coffee and food, and are coffee and\
 food impacted differently?**
 
-To examine the impact of store manager personality on food and coffee sales, we can interpret the regression coefficients of our model. For coffee sales, the conscientiousness coefficient is 0.34, indicating coffee sales increase by 0.34 transactions for every one unit increase in conscientiousness. On the other hand, there will be a decrease in coffee sales by 0.41 transactions for every one unit in neuroticism. So, conscientiousness has a small positive impact on coffee sales while neuroticism has a slightly negative impact on coffee sales.
+To understand how store manager personality traits influence food and coffee sales, we interpret the regression coefficients from our model.
 
-In this model, our interaction terms (con \* food and neur \* food) refer to the offset of the coffee effect. So, to interpret the impact on food transactions, we need to add the coffee coefficients to their interaction terms. Looking at conscientiousness, 1.01 + 0.34 = 1.35 so there is an increase in food sales by 1.35 transactions for every one unit increase in conscientiousness. For neuroticism, 0.11 - 0.41 = -0.3 so food sales decrease by 0.3 transactions for every one unit increase in neuroticism. While neuroticism again has a slightly negative impact on food sales, conscientiousness has a significant positive effect on food sales.
+Coffee sales:
 
-To investigate how sales are impacted differently for food and coffee, we can interpret the food and interaction coefficients. The coefficient for food in this model represents a baseline difference in sales between coffee and food, so our coefficient value of -0.84 indicates that coffee tends to sell 0.84 more units than food. For the specific impact of conscientiousness and neuroticism on food versus coffee sales, we examine the interaction coefficients. The con \* food coefficient value is 1.01, signifying that conscientiousness has a greater impact on food sales over coffee sales by a significant amount. Conversely, the neur \* food coefficient value is 0.11, meaning there is less of an impact on food versus coffee sales, but neuroticism still effects food sales more than coffee.
+-   The coefficient for conscientiousness is 0.34, indicating that coffee sales increase by 0.34 transactions for every one-unit increase in conscientiousness.
+
+-   Conversely, the coefficient for neuroticism is -0.41, meaning coffee sales decrease by 0.41 transactions for every one-unit increase in neuroticism.
+
+-   These results suggest that conscientiousness has a small positive impact on coffee sales, while neuroticism has a slightly negative effect.
+
+Food sales:
+
+The interaction terms con \* food and neur \* food represent the offset from the coffee coefficients. To interpret their impact on food transactions, we sum the coffee coefficients and their corresponding interaction terms:
+
+-   For conscientiousness: 1.01+0.34=1.35. This indicates that food sales increase by 1.35 transactions for every one-unit increase in conscientiousness.
+
+-   For neuroticism: 0.11−0.41=−0.30. This shows that food sales decrease by 0.30 transactions for every one-unit increase in neuroticism.
+
+Overall, conscientiousness has a significant positive impact on food sales, while neuroticism has a small negative effect.
+
+Comparing food and coffee sales:
+
+To investigate how food and coffee sales differ, we focus on the food and interaction coefficients:
+
+-   The food coefficient (−0.84) reflects the baseline difference in sales between coffee and food, indicating that coffee tends to sell 0.84 more units than food on average.
+
+-   The con \* food coefficient (1.01) suggests that conscientiousness has a much stronger positive effect on food sales compared to coffee sales.
+
+-   The neur \* food coefficient (0.11) indicates that neuroticism has a slightly greater impact on food sales than coffee sales, but the difference is relatively small.
+
+In summary, conscientiousness appears to have a more substantial positive influence on food sales compared to coffee, while neuroticism generally has a negative impact on both types of sales but with less differentiation.
 
 **Once you control for the personality characteristics of the store managers, what stores should be\
 performing well? (i.e. the rest of the employees might be great, but the store manager might be bringing sales down)**
@@ -123,6 +155,36 @@ In this plot, we are measuring the random intercept estimates and confidence int
 
 After running a random slope Bayesian hierarchical model, we were able to draw the following insights:
 
--   
+-   In general, an increase in conscientiousness has a positive impact on both coffee and food sales.
 
-### Diagnostics 
+-   Conscientiousness has a greater positive impact on food sales than coffee sales by a significant amount.
+
+-   In general, an increase in neuroticism has a negative impact on food and coffee sales, although the magnitude of this impact is less than that of conscientiousness.
+
+-   Neuroticism does not impact food and coffee sales differently by a significant amount.
+
+-   After controlling for store manager personality, we expect stores 12, 14, and 17 to perform the best.
+
+-   We expect stores 9, 11, and 16 to perform the worst. These stores might warrant further investigation into management or operational issues.
+
+### Diagnostics
+
+**Trace Plots:**
+
+```{r}
+mcmc_plot(model, type = "trace")
+```
+
+**Density Plots:**
+
+```{r}
+mcmc_plot(model, type = "dens_overlay")
+```
+
+**Coefficient Plots:**
+
+```{r}
+mcmc_plot(model, type = "intervals", pars = "b_")
+```
+
+![]()
