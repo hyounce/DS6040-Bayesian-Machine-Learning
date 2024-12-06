@@ -2,49 +2,127 @@
 
 **Honor Pledge:** On my honor as a student, I have neither given nor received unauthorized aid on this assignment.
 
-```{r}
+```{r message = FALSE, warning = FALSE}
 library(brms)
+library(ggplot2)
+library(dplyr)
 sales_data <- read.csv('sales-ds6040.csv')
 ```
 
 ### Problem Statement
 
-We are interested in exploring how regional store sales are impacted based on neuroticism and conscientiousness scores of store managers. Specifically, we will examine the difference of sales across food and coffee orders. To do this, we will implement a Bayesian hierarchical model to cluster by store ID and perform a regression to examine differences in sales. Throughout this process, we hope to discover insights concerning the impact of manager personality, as well as which stores we expect to perform well in the absence of neurotic managers.
+We are interested in exploring how regional store sales are impacted based on neuroticism and conscientiousness scores of store managers. Specifically, we will examine the difference of sales across food and coffee orders. To do this, we will implement a Bayesian hierarchical model to cluster by store ID and perform a linear regression to examine differences in sales. Throughout this process, we hope to discover insights concerning the impact of manager personality, as well as which stores we expect to perform well in the absence of neurotic/conscientious managers.
 
 ### Approach:
 
-We will use a Bayesian hierarchical model, specifically a random slope mixed effects model. This model is well-suited for our problem because we are interested in clustering our data by store, thus allowing for variability across stores. Specifically, we are performing linear regression on Sales, with predictors for if the sale was food or coffee, a standardized neuroticism and conscientiousness score, and the personality scores conditioned on store ID (to treat each store as a separate entity). In this way, we do not have to run a different regression model for each store, and can easily compare sale trends across the region.
+We will use a Bayesian hierarchical model, specifically a random slope mixed effects model. This model is well-suited for our problem because we are interested in clustering our data by store and allowing for variability across stores. Specifically, we are performing linear regression on Sales, with predictors for food/coffee transactions, a standardized neuroticism and conscientiousness score, and store ID. Using a hierarchical model and clustering by store is similar to performing a separate linear regression for each building, without losing any data or running multiple models. In this way, we can easily compare sale trends across the region.
 
 The model is as follows:
 
 $$
-Sales_{ij} = \beta_0 + \beta_{0j} + \beta_1 * Con_{ij} + \beta_2*Con_{ij}*Food_{ij} + \beta_3*Neur_{ij} + \beta_4*Neur_{ij}*Food_{ij} + \epsilon_{ij}
+Sales_{ij} = \beta_{0j} + \beta_{1j} * Food + \beta_{2j} * Con + \beta_{3j}*Neur + \beta_{4j} * Con * Food + \beta_{5j}*Neur*Food + \epsilon_{i}
 $$
 
-Where:
+Which is equivalent to:
+
+$$
+y_{ij} = \beta_{0j} + \beta_{1j}x_{1ij} + \beta_{2j}*x_{2ij} + \beta_{3j}*x_{3ij} + \beta_{4j}*x_{4ij} + \beta_{4j}*x_{5ij} + \epsilon_i
+$$
+
+$$
+\epsilon_i \sim N(0, \sigma^2) 
+$$ $$
+\beta_{0j} \sim N(\mu_{\beta_0}, \sigma_0^2)
+$$ $$
+\beta_{1j} \sim N(\mu_{\beta_1}, \sigma_1^2)
+$$ Where:
 
 $Sales_{ij}$ - Sales for month $i$ in store $j$
 
-$\beta_0$ - Fixed intercept (mean sales across all stores)
-
-$\beta_1$ - Effect of conscientiousness on coffee sales
-
-$\beta_2$ - Difference in $\beta_1$ effect on food sales
-
-$\beta_3$ - Effect of neuroticism on coffee sales
-
-$\beta_4$ - Difference in $\beta_3$ effect on food sales
-
 $\beta_{0j}$ - Random intercept for store $j$
 
-$\epsilon_{ij}$ - Residual error for month $i$ in store $j$
+$\beta_{1j}$ - Effect of food transactions for store $j$
 
-### Questions / Edits to make: 
+$\beta_{2j}$ - Effect of conscientiousness on coffee sales for store $j$
 
-**Do we want mixed-effects or fixed-effects, what is the difference?**
+$\beta_{3j}$ - Effect of neuroticism on coffee sales for store $j$
 
-**How do I make my model random slope intercept (if that is what I want)?**
+$\beta_{4j}$ - Difference in $\beta_{2j}$ effect on food sales for store $j$
 
-**is it sale \~ food + con + neuro + (con\|store) + (neur\|store)?**
+$\beta_{5j}$ - Difference in $\beta_{3j}$ effect on food sales for store $j$
 
-**How do i look at coffee vs food sales? same model just color observations differently or do different models?**
+$\epsilon_{i}$ - Residual error
+
+### Prior Selection and Rationale:
+
+Our priors for this model are:
+
+$$
+\mu_{\beta_0}, \mu_{\beta_1} \sim N(0,10)
+$$
+
+$$
+\sigma^2, \sigma_0^2, \sigma_1^2 \sim Half-Cauchy(0,2) 
+$$
+
+For our mu values, we are using a Normal distribution. We will choose uninformative hyperparameters since we do not have a strong prior belief about how the data should behave. We let 0 be the mean because we have no prior belief if the direction of the effect will be positive or negative. We let 10 be our variance to allow for a wide range of values.
+
+For the sigma values, we are using a Half-Cauchy distribution. Again we will choose uninformative hyperparamters. We set 0 as the mean since we are using Half-Cauchy, and thus only looking at positive values. Our scale parameter is 2, which favors smaller variances and makes the distribution centered closer to zero.
+
+### Findings:
+
+```{r message = FALSE, warning = FALSE}
+# brms model 
+formula <- bf(sales ~ con + neur + food + con*food + neur*food + (food|store))
+priors <- c(
+  set_prior("normal(0, 10)", class = "b"),
+  set_prior("cauchy(0,2)", class = "sd")
+)
+model <- brm(formula, data=sales_data, prior=priors, refresh=0, silent=2)
+```
+
+```{r}
+summary(model)
+```
+
+**How does conscientiousness and neuroticism impact the sales of coffee and food, and are coffee and\
+food impacted differently?**
+
+To examine the impact of store manager personality on food and coffee sales, we can interpret the regression coefficients of our model. For coffee sales, the conscientiousness coefficient is 0.34, indicating coffee sales increase by 0.34 transactions for every one unit increase in conscientiousness. On the other hand, there will be a decrease in coffee sales by 0.41 transactions for every one unit in neuroticism. So, conscientiousness has a small positive impact on coffee sales while neuroticism has a slightly negative impact on coffee sales.
+
+In this model, our interaction terms (con \* food and neur \* food) refer to the offset of the coffee effect. So, to interpret the impact on food transactions, we need to add the coffee coefficients to their interaction terms. Looking at conscientiousness, 1.01 + 0.34 = 1.35 so there is an increase in food sales by 1.35 transactions for every one unit increase in conscientiousness. For neuroticism, 0.11 - 0.41 = -0.3 so food sales decrease by 0.3 transactions for every one unit increase in neuroticism. While neuroticism again has a slightly negative impact on food sales, conscientiousness has a significant positive effect on food sales.
+
+To investigate how sales are impacted differently for food and coffee, we can interpret the food and interaction coefficients. The coefficient for food in this model represents a baseline difference in sales between coffee and food, so our coefficient value of -0.84 indicates that coffee tends to sell 0.84 more units than food. For the specific impact of conscientiousness and neuroticism on food versus coffee sales, we examine the interaction coefficients. The con \* food coefficient value is 1.01, signifying that conscientiousness has a greater impact on food sales over coffee sales by a significant amount. Conversely, the neur \* food coefficient value is 0.11, meaning there is less of an impact on food versus coffee sales, but neuroticism still effects food sales more than coffee.
+
+**Once you control for the personality characteristics of the store managers, what stores should be\
+performing well? (i.e. the rest of the employees might be great, but the store manager might be bringing sales down)**
+
+```{r}
+ranef_data <- ranef(model)$store
+intercepts <- ranef_data[, , "Intercept"]
+
+intercepts_df <- as.data.frame(intercepts)
+intercepts_df <- intercepts_df %>%
+  mutate(store = rownames(intercepts_df),
+         lower = Estimate - 1.96 * Est.Error,
+         upper = Estimate + 1.96 * Est.Error)
+
+ggplot(intercepts_df, aes(x = Estimate, y = store)) +
+  geom_point() +
+  geom_errorbarh(aes(xmin = lower, xmax = upper), height = 0.2) +
+  geom_vline(xintercept = 0, linetype = "dashed", color = "red") +
+  labs(
+    title = "Random Intercepts by Store ID",
+    x = "Random Intercept Estimate",
+    y = "Store ID")
+```
+
+In this plot, we are measuring the random intercept estimates and confidence intervals for each store. These random intercepts represent deviations in store performance from the average sales, after controlling for the fixed effects (including manager personality characteristics). Thus, stores with the highest random intercept estimates are expected to perform well when accounting for store manager personality, and low random intercept estimates indicate a store is not performing well in comparison to average sales. Based on our results, we see that stores 14, 12, 13, and 17 are performing best. On the other hand, stores 16, 9, and 11 are performing worst in comparison to average sales.
+
+### Summary
+
+After running a random slope Bayesian hierarchical model, we were able to draw the following insights:
+
+-   
+
+### Diagnostics 
